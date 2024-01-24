@@ -347,7 +347,7 @@ notebook.add(
 path_frame = Frame(encryption_frame)
 path_frame.pack(fill=tk.X, pady=10, padx=20)
 
-Label(path_frame, text="Choose an Image").pack(side="left")
+Label(path_frame, text="Choose file").pack(side="left")
 
 path_entry_en = Entry(path_frame)
 path_entry_en.pack(side="left", fill=tk.X, expand=True, padx=10)
@@ -398,7 +398,7 @@ notebook.add(decryption_frame, text="Decryption")
 path_frame = Frame(decryption_frame)
 path_frame.pack(fill=tk.X, pady=10, padx=20)
 
-Label(path_frame, text="Choose an Image").pack(side="left")
+Label(path_frame, text="Choose file").pack(side="left")
 
 path_entry_de = Entry(path_frame)
 path_entry_de.pack(side="left", fill=tk.X, expand=True, padx=10)
