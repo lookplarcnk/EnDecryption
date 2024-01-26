@@ -6,25 +6,35 @@ from tkinter import filedialog
 from Crypto.Cipher import AES
 from PIL import Image
 
-# screen setup
+# screen setup GUI
 app = tk.Tk()
-app.title("EnDecryption")
+app.title("EnDecryption 1.5.1")
 app.minsize(700, 350)
 app.maxsize(850, 450)
 app.resizable(False, False)
 
+# add frame
+frame = tk.Frame(app)
+frame.pack()
 
-# switch to encrytion page
+# add welcome message
+welcome = tk.Label(frame, text="Encryption and Decryption")
+welcome.pack()
+
+# set font size
+welcome.config(font=("Arial", 20))
+
+# เปลี่ยนเข้าสู่หน้า encryption
 def switch_to_encryption_page():
     notebook.select(encryption_frame)
 
 
-# switch to decrytion page
+# เปลี่ยนเข้าสู่หน้า decrytion
 def switch_to_decryption_page():
     notebook.select(decryption_frame)
 
 
-# open file in encrytion page
+# เปิดไฟล์หน้า encryption
 def openfile_en():
     file = filedialog.askopenfile(
         mode="r",
@@ -43,7 +53,7 @@ def openfile_en():
         path_entry_en.insert(END, str(filepath))
 
 
-# open file in decrytion page
+# เปิดไฟล์หน้า decryption
 def openfile_de():
     file = filedialog.askopenfile(
         mode="r",
@@ -69,7 +79,7 @@ def filetype(plaintext):
 
 
 # -------------------------- All File ----------------------------
-# encrytion function
+# function of encrytion ฟังก์ชันของการเข้ารหัส
 def encrypt_file(input_file, output_file, key):
     cipher = AES.new(key, AES.MODE_EAX)
 
@@ -80,7 +90,7 @@ def encrypt_file(input_file, output_file, key):
         outfile.write(ciphertext)
 
 
-# decrytion function
+# function of decrytion ฟังก์ชันของการถอดรหัส
 def decrypt_file(input_file, output_file, key):
     with open(input_file, "rb") as infile, open(output_file, "wb") as outfile:
         nonce = infile.read(16)
