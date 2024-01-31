@@ -1,2 +1,2 @@
 # EnDecryption
-Encryption and Decryption by AES Algorithm
+Encryption and Decryption by XOR (Exclusive Or) Algorithm
