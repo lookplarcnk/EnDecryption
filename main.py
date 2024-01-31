@@ -1,454 +1,124 @@
-import tkinter as tk
+# https://github.com/CallMeKaweewat
+# https://www.linkedin.com/in/kaweewat-kansupattanakul-93b3712a4/
 import os
-from tkinter import *
-from tkinter import ttk
+import tkinter as tk
 from tkinter import filedialog
-from Crypto.Cipher import AES
-from PIL import Image
-
-# screen setup GUI
-app = tk.Tk()
-app.title("EnDecryption 1.5.1")
-app.minsize(700, 350)
-app.maxsize(850, 450)
-app.resizable(False, False)
-
-# add frame
-frame = tk.Frame(app)
-frame.pack()
-
-# add welcome message
-welcome = tk.Label(frame, text="Encryption and Decryption")
-welcome.pack()
-
-# set font size
-welcome.config(font=("Arial", 20))
-
-# เปลี่ยนเข้าสู่หน้า encryption
-def switch_to_encryption_page():
-    notebook.select(encryption_frame)
-
-
-# เปลี่ยนเข้าสู่หน้า decrytion
-def switch_to_decryption_page():
-    notebook.select(decryption_frame)
-
-
-# เปิดไฟล์หน้า encryption
-def openfile_en():
-    file = filedialog.askopenfile(
-        mode="r",
-        filetypes=[
-            ("All Files", "*.*"),
-            ("Text Files", "*.txt"),
-            ("Image Files", "*.png *.jpg *.jpeg *.jp2"),
-            ("Image Files", "*.tiff *.ppm *.bmp"),
-            ("Music Files", "*.mp3 *.wav"),
-            ("Video Files", "*.mp4 *.mov"),
-        ],
-    )
-    if file:
-        path_entry_en.delete(0, END)
-        filepath = os.path.abspath(file.name)
-        path_entry_en.insert(END, str(filepath))
-
-
-# เปิดไฟล์หน้า decryption
-def openfile_de():
-    file = filedialog.askopenfile(
-        mode="r",
-        filetypes=[
-            ("All Files", "*.*"),
-            ("Text Files", "*.txt"),
-            ("Image Files", "*.png *.jpg *.jpeg *.jp2"),
-            ("Image Files", "*.tiff *.ppm *.bmp"),
-            ("Music Files", "*.mp3 *.wav"),
-            ("Video Files", "*.mp4 *.mov"),
-        ],
-    )
-    if file:
-        path_entry_de.delete(0, END)
-        filepath = os.path.abspath(file.name)
-        path_entry_de.insert(END, str(filepath))
-
-
-def filetype(plaintext):
-    file_name, file_extension = os.path.splitext(plaintext)
-    print(file_extension)
-    return file_extension
-
-
-# -------------------------- All File ----------------------------
-# function of encrytion ฟังก์ชันของการเข้ารหัส
-def encrypt_file(input_file, output_file, key):
-    cipher = AES.new(key, AES.MODE_EAX)
-
-    with open(input_file, "rb") as infile, open(output_file, "wb") as outfile:
-        ciphertext, tag = cipher.encrypt_and_digest(infile.read())
-        outfile.write(cipher.nonce)
-        outfile.write(tag)
-        outfile.write(ciphertext)
-
-
-# function of decrytion ฟังก์ชันของการถอดรหัส
-def decrypt_file(input_file, output_file, key):
-    with open(input_file, "rb") as infile, open(output_file, "wb") as outfile:
-        nonce = infile.read(16)
-        tag = infile.read(16)
-        cipher = AES.new(key, AES.MODE_EAX, nonce=nonce)
-        ciphertext = infile.read()
-
-        try:
-            plaintext = cipher.decrypt(ciphertext)
-            outfile.write(plaintext)
-        except ValueError:
-            print("Decryption failed. The key may be incorrect.")
-
+import tempfile
+import shutil
+
+# search file and directory
+def encrypt_decrypt_file(file_path, key, operation):
+    try:
+        with open(file_path, 'rb') as fin:
+            content = bytearray(fin.read())
+
+        for index, values in enumerate(content):
+            content[index] = values ^ key
+
+        # Use a temporary file to avoid overwriting the original
+        temp_file_path = tempfile.mktemp()
+        with open(temp_file_path, 'wb') as fout:
+            fout.write(content)
+
+        # Move the temporary file to the original file
+        shutil.move(temp_file_path, file_path)
+
+        result_label.config(text=f'{operation} Done for {file_path}.')
+    # call err
+    except FileNotFoundError:
+        result_label.config(text=f'Error: File not found - {file_path}')
+    except ValueError:
+        result_label.config(text='Error: Invalid key. Please enter a valid integer key.')
+    except Exception as e:
+        result_label.config(text=f'Error caught: {type(e).__name__} - {e}')
+
+def browse_file():
+    file_path = filedialog.askopenfilename()
+    file_entry.delete(0, tk.END)
+    file_entry.insert(0, file_path)
+    operation_var.set("Single File")
+
+def browse_directory():
+    directory_path = filedialog.askdirectory()
+    directory_entry.delete(0, tk.END)
+    directory_entry.insert(0, directory_path)
+    operation_var.set("All Files")
+
+def process_encryption_decryption():
+    selected_operation = operation_var.get()
+    key = int(key_entry.get())
+
+    if selected_operation == "Single File":
+        file_path = file_entry.get()
+        encrypt_decrypt_file(file_path, key, 'Encryption/Decryption')
+    elif selected_operation == "All Files":
+        directory = directory_entry.get()
+
+        if not os.path.isdir(directory):
+            result_label.config(text=f'Error: {directory} is not a valid directory.')
+            return
+
+        for filename in os.listdir(directory):
+            file_path = os.path.join(directory, filename)
+            if os.path.isfile(file_path):
+                encrypt_decrypt_file(file_path, key, 'Encryption/Decryption')
+
+# GUI setup
+root = tk.Tk()
+root.title("File Encryption and Decryption")
+root.geometry('600x400')
+root.config(bg='#E0F0FF')
+
+# Operation Selection
+operation_var = tk.StringVar()
+operation_var.set("Single File")
+
+operation_label = tk.Label(root, text="Select Operation:")
+operation_label.pack(pady=5)
+operation_label.config(bg='#FFFFFF') 
+
+single_file_radio = tk.Radiobutton(root, text="Single File", variable=operation_var, value="Single File")
+single_file_radio.pack(pady=5)
+single_file_radio.config(bg='#FFFFFF') 
+
+all_files_radio = tk.Radiobutton(root, text="All Files", variable=operation_var, value="All Files")
+all_files_radio.pack(pady=5)
+all_files_radio.config(bg='#FFFFFF')
+
+# File/Directory Path Entry
+file_label = tk.Label(root, text="File/Directory Path:")
+file_label.pack(pady=5)
+file_label.config(bg='#FFFFFF')  
+
+file_entry = tk.Entry(root, width=50)
+file_entry.pack()
+
+browse_button = tk.Button(root, text="Browse", command=lambda: browse_file() if operation_var.get() == "Single File" else browse_directory())
+browse_button.pack(pady=5)
+
+# Directory Entry
+directory_label = tk.Label(root, text="Directory Path (for All Files):")
+directory_label.pack(pady=5)
+directory_label.config(bg='#FFFFFF')  
+
+directory_entry = tk.Entry(root, width=50)
+directory_entry.pack()
+
+# Encryption Key Entry
+key_label = tk.Label(root, text="Encryption/Decryption Key:")
+key_label.pack(pady=5)
+key_label.config(bg='#FFFFFF')  
 
-# -------------------------- Image ----------------------------
-def convert_to_RGB(data):
-    r, g, b = tuple(
-        map(lambda d: [data[i] for i in range(0, len(data)) if i % 3 == d], [0, 1, 2])
-    )
-    pixels = tuple(zip(r, g, b))
-    return pixels
-
-
-def process_image(filename, key, format, filename_out):
-    # Opens image and converts it to RGB format for PIL
-    im = Image.open(filename)
-    data = im.convert("RGB").tobytes()
-
-    # Since we will pad the data to satisfy AES's multiple-of-16 requirement, we will store the original data length and "unpad" it later.
-    original = len(data)
-
-    # Encrypts using desired AES mode (we'll set it to CBC by default)
-    encrypted_data = aes_cbc_encrypt(key, pad(data))[:original]
-
-    # Create a new PIL Image object and save the old image data into the new image.
-    im2 = Image.new(im.mode, im.size)
-    im2.putdata(convert_to_RGB(encrypted_data))
-
-    # Save image
-    if format == "jpeg":
-        format2 = "png"
-        im2.save(filename_out + "." + format, format2)
-    elif format == "jpg":
-        format2 = "png"
-        im2.save(filename_out + "." + format, format2)
-    elif format == "jp2":
-        format2 = "png"
-        im2.save(filename_out + "." + format, format2)
-    else:
-        im2.save(filename_out + "." + format, format)
-
-
-# CBC Encryption
-def aes_cbc_encrypt(key, data, mode=AES.MODE_CBC):
-    IV = "A" * 16  # We'll manually set the initialization vector to simplify things
-    aes = AES.new(key, mode, IV.encode("utf8"))
-    new_data = aes.encrypt(data)
-    print("Encrypted")
-    return new_data
-
-
-# CBC Decryption
-def aes_cbc_decrypt(key, data, mode=AES.MODE_CBC):
-    IV = "A" * 16  # Same initialization vector as used for encryption
-    aes = AES.new(key, mode, IV.encode("utf8"))
-    decrypted_data = aes.decrypt(data)
-    return decrypted_data.rstrip(b"\x00")  # Remove padding
-
-
-# Decrypt the previously encrypted image
-def decrypt_image(filename_out, filename, format, key):
-    im = Image.open(filename)
-    data = im.convert("RGB").tobytes()
-
-    decrypted_data = aes_cbc_decrypt(key, data)
-
-    # Create a new PIL Image object and save the decrypted data into the new image.
-    im2 = Image.new(im.mode, im.size)
-    im2.putdata(convert_to_RGB(decrypted_data))
-
-    # Save the decrypted image
-    if format == "jpeg":
-        format2 = "png"
-        im2.save("decrypted" + "." + format, format2)
-    elif format == "jpg":
-        format2 = "png"
-        im2.save("decrypted" + "." + format, format2)
-    elif format == "jp2":
-        format2 = "png"
-        im2.save("decrypted" + "." + format, format2)
-    else:
-        im2.save("decrypted" + "." + format, format)
-
-
-def pad(data):
-    return data + b"\x00" * (16 - len(data) % 16)
-
-
-# -------------------------- Encryption Button ----------------------------
-# press encrytion button
-def encrypt_button_clicked():
-    # clear progress box
-    progress_en.delete("1.0", "end")
-
-    # get password
-    password = password_entry_en.get()
-    print(password)
-
-    # make key
-    key_en = make_16_bytes(password)
-    print(key_en)
-
-    # input file path
-    inputfile = path_entry_en.get()
-
-    # input file type
-    filetype_en = filetype(inputfile)
-
-    # name encrypted file with same extention as input file
-    encrypted_file = "encrypted_file" + filetype_en
-
-    # select image file to encryption in image mode
-    if (
-        filetype_en == ".png"
-        or filetype_en == ".jpg"
-        or filetype_en == ".jpeg"
-        or filetype_en == ".ppm"
-        or filetype_en == ".tiff"
-        or filetype_en == ".bmp"
-    ):
-        if filetype_en == ".png":
-            format = "png"
-        elif filetype_en == ".jpg":
-            format = "jpg"
-        elif filetype_en == ".jpeg":
-            format = "jpeg"
-        elif filetype_en == ".ppm":
-            format = "ppm"
-        elif filetype_en == ".tiff":
-            format = "tiff"
-        elif filetype_en == ".bmp":
-            format = "bmp"
-
-        # debug image mode
-        print("image file detected")
-        progress_en.insert(tk.END, "Image file detected\n")
-
-        # set file name
-        filename_out = "encrypted"
-        filename = inputfile
-
-        # process encrypt image
-        process_image(filename, key_en, format, filename_out)
-    else:
-        # all file encrypt
-        print("non-image file detected")
-        encrypt_file(inputfile, encrypted_file, key_en)
-
-    # print progress
-    progress_en.insert(tk.END, "Encrypt Complete\n")
-    progress_en.insert(tk.END, "Input File:  " + inputfile + "\n")
-    dir_path = os.path.dirname(os.path.realpath(encrypted_file))
-    progress_en.insert(
-        tk.END, "File encrypted as:  " + dir_path + "\\" + encrypted_file + "\n"
-    )
-
-
-# -------------------------- Decryption Button ----------------------------
-# press decrytion button
-def decrypt_button_clicked():
-    # clear progress box
-    progress_de.delete("1.0", "end")
-
-    # get password
-    password = password_entry_de.get()
-    print(password)
-
-    # make key
-    key_de = make_16_bytes(password)
-    print(key_de)
-
-    # excrypted file path
-    excryptedfile = path_entry_de.get()
-
-    # excrypted file type
-    filetype_de = filetype(excryptedfile)
-
-    # name decrypted file with same extention as input file
-    decrypted_file = "decrypted_file" + filetype_de
-
-    # select image file to encryption in image mode
-    if (
-        filetype_de == ".png"
-        or filetype_de == ".jpg"
-        or filetype_de == ".jpeg"
-        or filetype_de == ".ppm"
-        or filetype_de == ".tiff"
-        or filetype_de == ".bmp"
-    ):
-        if filetype_de == ".png":
-            format = "png"
-        elif filetype_de == ".jpg":
-            format = "jpg"
-        elif filetype_de == ".jpeg":
-            format = "jpeg"
-        elif filetype_de == ".ppm":
-            format = "ppm"
-        elif filetype_de == ".tiff":
-            format = "tiff"
-        elif filetype_de == ".bmp":
-            format = "bmp"
-
-        # debug image mode
-        print("image file detected")
-        progress_en.insert(tk.END, "Image file detected\n")
-
-        # set file name
-        filename_out = "decrypted"
-        filename = excryptedfile
-
-        # process decrypt image
-        decrypt_image(filename_out, filename, format, key_de)
-    else:
-        # all file encrypt
-        print("non-image file detected")
-        decrypt_file(excryptedfile, decrypted_file, key_de)
-
-    # print progress
-    progress_de.insert(tk.END, "Decrypt Complete\n")
-    progress_de.insert(tk.END, "Input File:  " + excryptedfile + "\n")
-    dir_path = os.path.dirname(os.path.realpath(decrypted_file))
-    progress_de.insert(
-        tk.END, "File decrypted as:  " + dir_path + "\\" + decrypted_file + "\n"
-    )
-
-
-# pad plaintext password to 16 bytes (128-AES)
-def make_16_bytes(text):
-    byte_object = bytes(text, "utf-8")
-    padding_length = 16 - len(byte_object)
-    padding = b"\x01" * padding_length
-    padded_byte_object = padding + byte_object
-    return padded_byte_object
-
-
-# tkinter screen tab
-notebook = ttk.Notebook(
-    app,
-)
-notebook.pack(fill=tk.BOTH, expand=True)
-style = ttk.Style()
-style.configure("TNotebook.Tab", padding=(150, 7))
-
-# ----------------------------------- Encryption Page -----------------------------------
-encryption_frame = Frame(
-    notebook,
-)
-notebook.add(
-    encryption_frame,
-    text="Encryption",
-)
-
-# path entry
-path_frame = Frame(encryption_frame)
-path_frame.pack(fill=tk.X, pady=10, padx=20)
-
-Label(path_frame, text="Choose file").pack(side="left")
-
-path_entry_en = Entry(path_frame)
-path_entry_en.pack(side="left", fill=tk.X, expand=True, padx=10)
-
-# browse path button
-button = tk.Button(path_frame, text="Browse", command=openfile_en, height=1, width=10)
-button.pack()
-
-# password entry
-password_frame = Frame(encryption_frame)
-password_frame.pack(fill=tk.X, padx=20)
-
-Label(password_frame, text="Password").pack(side="left")
-
-password_entry_en = Entry(password_frame, show="*")
-password_entry_en.pack(side="left", fill=tk.X, expand=True, padx=10)
-
-# encryption button
-button = tk.Button(
-    password_frame,
-    text="Encryption",
-    command=lambda: [encrypt_button_clicked()],
-    height=1,
-    width=10,
-)
-button.pack()
-
-# progress textbox
-progress_frame = Frame(encryption_frame)
-progress_frame.pack(fill=tk.X, padx=20, pady=10)
-
-# progress textbox scroll bar
-v = Scrollbar(progress_frame, orient="vertical")
-v.pack(side=RIGHT, fill="y")
-
-progress_en = Text(progress_frame, yscrollcommand=v.set)
-
-v.config(command=progress_en.yview)
-
-progress_en.pack(fill=tk.BOTH, expand=True)
-
-
-# ----------------------------------- Decryption Page -----------------------------------
-decryption_frame = Frame(notebook)
-notebook.add(decryption_frame, text="Decryption")
-
-# path entry
-path_frame = Frame(decryption_frame)
-path_frame.pack(fill=tk.X, pady=10, padx=20)
-
-Label(path_frame, text="Choose file").pack(side="left")
-
-path_entry_de = Entry(path_frame)
-path_entry_de.pack(side="left", fill=tk.X, expand=True, padx=10)
-
-# browse path button
-button = tk.Button(path_frame, text="Browse", command=openfile_de, height=1, width=10)
-button.pack()
-
-# password entry
-password_frame = Frame(decryption_frame)
-password_frame.pack(fill=tk.X, padx=20)
-
-Label(password_frame, text="Password").pack(side="left")
-
-password_entry_de = Entry(password_frame, show="*")
-password_entry_de.pack(side="left", fill=tk.X, expand=True, padx=10)
-
-# decryption button
-button = tk.Button(
-    password_frame,
-    text="Decryption",
-    command=lambda: [decrypt_button_clicked()],
-    height=1,
-    width=10,
-)
-button.pack()
-
-# progress textbox
-progress_frame = Frame(decryption_frame)
-progress_frame.pack(fill=tk.X, padx=20, pady=10)
-
-# progress textbox scroll bar
-v = Scrollbar(progress_frame, orient="vertical")
-v.pack(side=RIGHT, fill="y")
-
-progress_de = Text(progress_frame, yscrollcommand=v.set)
-
-v.config(command=progress_de.yview)
-
-progress_de.pack(fill=tk.BOTH, expand=True)
-
-# end tkinter
-app.mainloop()
+key_entry = tk.Entry(root)
+key_entry.pack()
+
+# Button for Encryption/Decryption
+process_button = tk.Button(root, text="Encrypt/Decrypt", command=process_encryption_decryption)
+process_button.pack(pady=5)
+
+# Result Label
+result_label = tk.Label(root, text="Made by RMUTL Student")
+result_label.pack(pady=5)
+result_label.config(bg='#FFFFFF')
+
+root.mainloop()
