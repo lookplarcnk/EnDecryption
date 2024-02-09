@@ -1,5 +1,3 @@
-# https://github.com/CallMeKaweewat
-# https://www.linkedin.com/in/kaweewat-kansupattanakul-93b3712a4/
 import os
 import tkinter as tk
 from tkinter import filedialog
